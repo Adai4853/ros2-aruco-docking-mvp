@@ -1,0 +1,23 @@
+# ROS 2 / colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime outputs
+data/*.csv
+media/*.gif
+media/*.mp4
+models/aruco_marker/materials/textures/marker.png
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
