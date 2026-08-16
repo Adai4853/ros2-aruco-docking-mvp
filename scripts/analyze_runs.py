@@ -13,6 +13,25 @@ def load_rows(path: Path) -> List[Dict[str, str]]:
         return list(csv.DictReader(stream))
 
 
+def reached_distance(rows: List[Dict[str, str]], reached_index: int):
+    """Return the closest recorded distance for the first reached sample."""
+    if rows[reached_index]["distance_m"]:
+        return float(rows[reached_index]["distance_m"])
+
+    # Detection memory can trigger REACHED between camera frames. Prefer the
+    # first stationary measurement after that transition, then fall back to
+    # the most recent measurement before it.
+    for row in rows[reached_index + 1 :]:
+        if row["stop_reason"] != "reached":
+            break
+        if row["distance_m"]:
+            return float(row["distance_m"])
+    for row in reversed(rows[:reached_index]):
+        if row["distance_m"]:
+            return float(row["distance_m"])
+    return None
+
+
 def summarize(path: Path, target_distance_m: float) -> Dict[str, object]:
     rows = load_rows(path)
     if not rows:
@@ -22,10 +41,13 @@ def summarize(path: Path, target_distance_m: float) -> Dict[str, object]:
             "error_m": None,
             "target_loss_stop_sec": None,
         }
-    reached = [row for row in rows if row["stop_reason"] == "reached"]
-    distance = None
-    if reached and reached[0]["distance_m"]:
-        distance = float(reached[0]["distance_m"])
+    reached_index = next(
+        (index for index, row in enumerate(rows) if row["stop_reason"] == "reached"),
+        None,
+    )
+    distance = (
+        None if reached_index is None else reached_distance(rows, reached_index)
+    )
 
     loss_latency = None
     target_lost_index = next(
@@ -48,7 +70,7 @@ def summarize(path: Path, target_distance_m: float) -> Dict[str, object]:
             )
     return {
         "file": str(path),
-        "success": bool(reached),
+        "success": reached_index is not None,
         "error_m": None if distance is None else abs(distance - target_distance_m),
         "target_loss_stop_sec": loss_latency,
     }

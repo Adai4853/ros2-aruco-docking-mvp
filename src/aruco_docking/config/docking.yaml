@@ -18,7 +18,11 @@ aruco_docking_node:
     max_angular_speed: 0.8
     search_angular_speed: 0.30
 
-    image_timeout_sec: 0.50
+    # Gazebo under WSL can occasionally leave more than 0.5 s between frames.
+    image_timeout_sec: 1.00
+    # Keep the last valid pose briefly so one missed frame does not cause
+    # repeated TRACK/STOP switching. Image timeout still has priority.
+    target_loss_timeout_sec: 0.75
     obstacle_stop_distance_m: 0.28
     front_sector_degrees: 30.0
     use_laser: true

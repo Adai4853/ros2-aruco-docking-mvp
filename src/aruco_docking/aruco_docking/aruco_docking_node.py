@@ -13,6 +13,7 @@ from sensor_msgs.msg import CameraInfo, Image, LaserScan
 from .aruco_detector import ArucoDetector
 from .controller import ControllerConfig, Detection, DockingController
 from .csv_logger import CsvLogger
+from .detection_memory import DetectionMemory
 
 
 class ArucoDockingNode(Node):
@@ -42,12 +43,17 @@ class ArucoDockingNode(Node):
         self._camera_matrix: Optional[np.ndarray] = None
         self._distortion: Optional[np.ndarray] = None
         self._detection: Optional[Detection] = None
+        self._detection_memory = DetectionMemory(
+            float(self._param("target_loss_timeout_sec"))
+        )
         self._last_image_sec: Optional[float] = None
         self._front_obstacle_m: Optional[float] = None
         self._last_state = None
         self._last_reason = None
 
-        self._logger = CsvLogger(self._param("csv_path"))
+        # Node already uses ``_logger`` internally for its ROS logger. Keep the
+        # CSV writer under a distinct name so get_logger() remains functional.
+        self._csv_logger = CsvLogger(self._param("csv_path"))
         self._publisher = self.create_publisher(
             Twist,
             self._param("cmd_vel_topic"),
@@ -94,7 +100,8 @@ class ArucoDockingNode(Node):
             "max_linear_speed": 0.16,
             "max_angular_speed": 0.8,
             "search_angular_speed": 0.3,
-            "image_timeout_sec": 0.5,
+            "image_timeout_sec": 1.0,
+            "target_loss_timeout_sec": 0.75,
             "obstacle_stop_distance_m": 0.28,
             "front_sector_degrees": 30.0,
             "control_rate_hz": 10.0,
@@ -115,7 +122,8 @@ class ArucoDockingNode(Node):
         self._distortion = np.asarray(message.d, dtype=np.float64)
 
     def _on_image(self, message: Image) -> None:
-        self._last_image_sec = self._now_sec()
+        now = self._now_sec()
+        self._last_image_sec = now
         try:
             image = self._bridge.imgmsg_to_cv2(message, desired_encoding="bgr8")
             observation = self._detector.detect(
@@ -132,6 +140,7 @@ class ArucoDockingNode(Node):
                     marker_id=observation.marker_id,
                 )
             )
+            self._detection_memory.update(self._detection, now)
         except Exception as error:  # Keep control timer alive and fail safe.
             self._detection = None
             self.get_logger().error(f"Image processing failed: {error}")
@@ -153,8 +162,9 @@ class ArucoDockingNode(Node):
     def _control_step(self) -> None:
         now = self._now_sec()
         image_age = None if self._last_image_sec is None else now - self._last_image_sec
+        control_detection = self._detection_memory.for_control(now)
         command = self._controller.compute(
-            self._detection,
+            control_detection,
             image_age,
             self._front_obstacle_m,
         )
@@ -173,7 +183,7 @@ class ArucoDockingNode(Node):
             self._last_reason = command.stop_reason
 
         detection = self._detection
-        self._logger.write(
+        self._csv_logger.write(
             {
                 "timestamp_sec": f"{now:.3f}",
                 "state": command.state.value,
@@ -195,8 +205,9 @@ class ArucoDockingNode(Node):
         )
 
     def destroy_node(self) -> bool:
-        self._publisher.publish(Twist())
-        self._logger.close()
+        if self.context.ok():
+            self._publisher.publish(Twist())
+        self._csv_logger.close()
         return super().destroy_node()
 
 
@@ -209,7 +220,8 @@ def main(args=None) -> None:
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ setup(
     maintainer_email="adai@example.com",
     description="ArUco-guided visual docking and safety control for TurtleBot3.",
     license="MIT",
+    tests_require=["pytest"],
     entry_points={
         "console_scripts": [
             "aruco_docking_node = aruco_docking.aruco_docking_node:main",

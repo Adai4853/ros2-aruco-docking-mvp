@@ -3,10 +3,29 @@
   <model name="aruco_marker">
     <static>true</static>
     <link name="marker_link">
-      <visual name="marker_visual">
+      <!-- A white quiet zone makes the black ArUco border distinguishable
+           from the Gazebo background, just like a printed marker on paper. -->
+      <visual name="marker_backing">
+        <pose>0 0 0 0 -1.57079632679 0</pose>
         <geometry>
           <plane>
-            <normal>-1 0 0</normal>
+            <normal>0 0 1</normal>
+            <size>0.19 0.19</size>
+          </plane>
+        </geometry>
+        <material>
+          <lighting>false</lighting>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+      <visual name="marker_visual">
+        <!-- Gazebo's plane is horizontal by default. Rotate it upright so the
+             robot's forward-facing camera can see the marker. -->
+        <pose>-0.001 0 0 0 -1.57079632679 0</pose>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
             <size>0.15 0.15</size>
           </plane>
         </geometry>

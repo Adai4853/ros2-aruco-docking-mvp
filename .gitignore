@@ -12,6 +12,9 @@ htmlcov/
 
 # Runtime outputs
 data/*.csv
+!data/run_center_*.csv
+!data/run_left_*.csv
+!data/run_right_*.csv
 media/*.gif
 media/*.mp4
 models/aruco_marker/materials/textures/marker.png

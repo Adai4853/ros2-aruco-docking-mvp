@@ -13,15 +13,20 @@ def generate_launch_description():
         "docking.yaml",
     )
     config = LaunchConfiguration("config")
+    csv_path = LaunchConfiguration("csv_path")
     return LaunchDescription(
         [
             DeclareLaunchArgument("config", default_value=default_config),
+            DeclareLaunchArgument("csv_path", default_value="data/docking_run.csv"),
             Node(
                 package="aruco_docking",
                 executable="aruco_docking_node",
                 name="aruco_docking_node",
                 output="screen",
-                parameters=[config, {"use_sim_time": True}],
+                parameters=[
+                    config,
+                    {"use_sim_time": True, "csv_path": csv_path},
+                ],
             ),
         ]
     )

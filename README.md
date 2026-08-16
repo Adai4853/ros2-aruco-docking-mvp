@@ -12,10 +12,14 @@
 | 图像超时、目标丢失、前方障碍停车 | 已编写 |
 | CSV 运行记录与统计脚本 | 已编写 |
 | 纯 Python 控制器与 CSV 记录器测试 | 10 项测试已通过 |
-| ROS 2 构建与 Gazebo 闭环 | 等待 Ubuntu 22.04 / ROS 2 Humble 环境验证 |
-| 10 次实验与性能指标 | 等待仿真实验 |
+| ROS 2 构建与 Gazebo 闭环 | 已验证 |
+| 正常停靠、目标丢失停车、障碍停车 | 已验证 |
+| 10 次实验与性能指标 | 已完成：10/10 成功，平均停车误差 0.0278 m |
 
-当前电脑尚未安装 WSL、Ubuntu 和 ROS 2。仓库中的“已编写”表示代码文件已创建；运行效果与实验指标将在实际验证后更新。
+当前环境已完成 WSL 2、Ubuntu 22.04、ROS 2 Humble、Gazebo Classic 和
+TurtleBot3 仿真验证。2026-08-16 的阶段验收完成了正常停靠、二维码消失停车、
+激光雷达障碍停车和 10 次重复实验。10 次实验全部成功，平均停车误差为
+`0.0278 m`，最大停车误差为 `0.0298 m`。
 
 ## 控制流程
 
@@ -80,7 +84,8 @@ source install/setup.bash
 终端 A 启动 TurtleBot3、Gazebo 和 ArUco 标记：
 
 ```bash
-ros2 launch aruco_docking simulation.launch.py
+cd /mnt/e/Adai/Project/ros2-aruco-docking-mvp
+bash scripts/start_docking_demo.sh
 ```
 
 确认实际话题：
@@ -97,6 +102,13 @@ cd /mnt/e/Adai/Project/ros2-aruco-docking-mvp
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 launch aruco_docking docking.launch.py
+```
+
+障碍停车验收使用红色测试柱：
+
+```bash
+cd /mnt/e/Adai/Project/ros2-aruco-docking-mvp
+bash scripts/spawn_safety_obstacle.sh
 ```
 
 参数位于 [`src/aruco_docking/config/docking.yaml`](src/aruco_docking/config/docking.yaml)。若仿真发布的话题名称不同，请在该文件中修改 `image_topic`、`camera_info_topic`、`cmd_vel_topic` 和 `scan_topic`。
@@ -117,6 +129,17 @@ python3 scripts/analyze_runs.py data/run_*.csv --target-distance 0.35
 ```
 
 实验位置、命名方法和验收条件见 [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md)。
+
+最终交付材料：
+
+- [`docs/最终验收报告.md`](docs/最终验收报告.md)
+- [`docs/项目交付清单.md`](docs/项目交付清单.md)
+
+一键复核构建、测试、模型和实验数据：
+
+```bash
+bash scripts/verify_delivery.sh
+```
 
 ## 软件基线
 
