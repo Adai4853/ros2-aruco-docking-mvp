@@ -134,6 +134,7 @@ python3 scripts/analyze_runs.py data/run_*.csv --target-distance 0.35
 
 - [`docs/最终验收报告.md`](docs/最终验收报告.md)
 - [`docs/项目交付清单.md`](docs/项目交付清单.md)
+- [`docs/项目知识点全景指南_零基础.md`](docs/项目知识点全景指南_零基础.md)
 
 一键复核构建、测试、模型和实验数据：
 
